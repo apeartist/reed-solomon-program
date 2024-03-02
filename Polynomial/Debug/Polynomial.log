@@ -1,0 +1,4 @@
+﻿  main.cpp
+C:\Users\laura\OneDrive\Desktop\polynomial\Polynomial\Polynomial\main.cpp(68,21): warning C4018: '<': signed/unsigned mismatch
+C:\Users\laura\OneDrive\Desktop\polynomial\Polynomial\Polynomial\main.cpp(200): warning C4715: 'decode': not all control paths return a value
+  Polynomial.vcxproj -> C:\Users\laura\OneDrive\Desktop\polynomial\Polynomial\Debug\Polynomial.exe
