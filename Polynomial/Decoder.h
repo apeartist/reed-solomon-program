@@ -16,7 +16,7 @@ public:
 
 	F256Polynomial corruptMessage(const F256Polynomial& message, int errors, int n, int k);
 
-	string decode(string message, int n, int k); // the final function: takes full
+	string decode(F256Polynomial corrupt, int n, int k); // the final function: takes full
 
 };
 

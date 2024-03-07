@@ -46,7 +46,6 @@ bool Decoder::reducedRowEchelon(vector<vector<F256element>>& matrix, vector<F256
 		}
 	}
 
-	cout << "." << endl;
 	if (matrix[N - 1][N - 1] == 0) { return false; }
 	solutions[N-1] = solutions[N-1] / matrix[N-1][N-1];
 	matrix[N - 1][N - 1] = 1;
@@ -82,7 +81,6 @@ F256Polynomial Decoder::generatorPolynomial(const int n, const int k) {
 	return outpoly;
 }
 
-
 vector<F256element> Decoder::messageToNumbers(const string message) {
 	// translates each char's data to an F256 element byte
 	vector<F256element> out = vector<F256element>();
@@ -92,9 +90,9 @@ vector<F256element> Decoder::messageToNumbers(const string message) {
 	return out;
 }
 
-vector<F256element> Decoder::padMessage(vector<F256element> v, int k) {
-	// adds zeroes to make it size k to encode later
-	while (v.size() < k) {
+vector<F256element> Decoder::padMessage(vector<F256element> v, int n) {
+	// adds zeroes to make it size n to encode later
+	while (v.size() < n) {
 		v.push_back(F256element(0));
 	}
 	return v;
@@ -129,22 +127,24 @@ F256Polynomial Decoder::corruptMessage(const F256Polynomial& message, int errors
 	return out;
 }
 
-string Decoder::decode(string message, int n, int k) {
+string Decoder::decode(F256Polynomial corrupt, const int n, const int k) {
+
+	// https://en.wikipedia.org/wiki/Reed%E2%80%93Solomon_error_correction#Peterson%E2%80%93Gorenstein%E2%80%93Zierler_decoder 
 
 	// decode from string
-	vector<F256element> messageInNums = messageToNumbers(message);
+	/*vector<F256element> messageInNums = messageToNumbers(message);
 	F256Polynomial corrupt = F256Polynomial();
 	for (int i = k - 1; i >= 0; i--) {
 		corrupt.addNewCoeff(messageInNums[i]);
-	}
+	}*/
 
-	vector<F256element> xCoords = vector<F256element>();
+	vector<F256element> xCoords = vector<F256element>(); // list of points to evaluate polynomial at
 	F256element alpha = F256element(2); // generator
 	for (int i = 1; i <= n - k; i++) {
 		xCoords.push_back(alpha.pow(i));
 	}
 
-	vector<F256element> syndromes = vector<F256element>();
+	vector<F256element> syndromes = vector<F256element>(); // the y values at generator's xCoords
 	for (F256element x : xCoords) {
 		syndromes.push_back(corrupt.evaluate(x));
 	}
@@ -154,8 +154,8 @@ string Decoder::decode(string message, int n, int k) {
 	// decoding time
 	// find coeffs of error location polynomial (lambda i)
 
-	vector<F256element> lambdas = vector<F256element>();
-	bool found = false;
+	vector<F256element> lambdas = vector<F256element>(); // coefficients of error locator polynomial
+	bool found = false; // found the number of errors?
 	for (int i = v; i > 0 && !found; i--) {
 		vector<vector<F256element>> matrix = vector<vector<F256element>>();
 		for (int j = 0; j < i; j++) {
@@ -168,23 +168,24 @@ string Decoder::decode(string message, int n, int k) {
 		for (int j = i; j < 2 * i; j++) {
 			lambdas.push_back(syndromes[j]);
 		}
-		found = reducedRowEchelon(matrix, lambdas);
+		found = reducedRowEchelon(matrix, lambdas); // returns true if the number of errors is found
 	}
-	if (!found) { cout << "no errors?" << endl; }
+	if (!found) { cout << "No errors found." << endl; } // if found is still false, it went to the end without errors.
 	else {
-		F256Polynomial errorLocatorPolynomial = F256Polynomial();
+		F256Polynomial errorLocatorPolynomial = F256Polynomial(); // using lambda as coefficients
 		errorLocatorPolynomial.addNewCoeff(1);
 		for (int i = lambdas.size() - 1; i >= 0; i--) {
 			errorLocatorPolynomial.addNewCoeff(lambdas[i]);
 		}
-		vector<F256element> errorLocators = vector<F256element>();
+		vector<F256element> errorLocators = vector<F256element>(); // since 256 is small, just iterate and find what evals to 0
 		for (int i = 0; i < 256; i++) {
 			if (errorLocatorPolynomial.evaluate(F256element(i)) == 0) {
 				errorLocators.push_back(F256element(i).inverse());
 			}
 		}
 
-		int v = errorLocators.size();
+		int v = errorLocators.size(); // number of roots
+		cout << "There are " << v << " errors." << endl;
 		vector<F256element> errorValues = vector<F256element>();
 		vector<vector<F256element>> matrix = vector<vector<F256element>>();
 		for (int i = 0; i < v; i++) {
